@@ -2,9 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import { execSync } from 'child_process';
+import OpenAI from 'openai';
 
 // Load environment variables from .env.local
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env', override: true });
 
 // Type definitions
 interface ArxivPaper {
@@ -34,6 +35,7 @@ interface DatabaseRow {
   'publish-date': string | null;
   doi: string | null;
   'journal-ref': string | null;
+  embedding: number[] | null;
 }
 
 // Initialize Supabase client
@@ -41,8 +43,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
+});
 
-let numberOfPapersToUpload = 10000;
+
+let numberOfPapersToUpload = 1000;
 
 // Call the python script to filter the papers
 
@@ -53,23 +60,56 @@ const arxivData: ArxivPaper[] = JSON.parse(
   fs.readFileSync('data/arxiv-output-filtered.json', 'utf8')
 );
 
+// Generate embeddings using OpenAI with retry logic
+async function generateEmbedding(text: string, retries = 3): Promise<number[]> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: text,
+      });
+      return response.data[0].embedding;
+    } catch (error: any) {
+      // Handle rate limit errors
+      if (error?.status === 429 && attempt < retries - 1) {
+        const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`Rate limit hit, waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else {
+        console.error('Error generating embedding:', error);
+        throw error;
+      }
+    }
+  }
+  throw new Error('Failed to generate embedding after retries');
+}
+
 // Transform data to match your schema
-function transformData(paper: ArxivPaper): DatabaseRow {
+async function transformData(paper: ArxivPaper): Promise<DatabaseRow> {
+  const title = paper.title?.replace(/\n/g, ' ').trim() || '';
+  const abstract = paper.abstract?.replace(/\n/g, ' ').trim() || '';
+
+  // Combine title and abstract for embedding
+  const textForEmbedding = `${title}\n\n${abstract}`;
+
+  // Generate embedding
+  const embedding = await generateEmbedding(textForEmbedding);
+
   return {
-    title: paper.title?.replace(/\n/g, ' ').trim() || null,
-    abstract: paper.abstract?.replace(/\n/g, ' ').trim() || null,
+    title: title || null,
+    abstract: abstract || null,
     authors: paper.authors || null,
     'publish-date': paper.update_date || null,
     doi: paper.doi || null,
     'journal-ref': paper['journal-ref'] || null,
-    // embedding will be null by default
+    embedding: embedding,
   };
 }
 
 // Upload in batches
 async function uploadToSupabase(
   data: ArxivPaper[], 
-  batchSize: number = 100
+  batchSize: number = 10
 ): Promise<void> {
   const batches: ArxivPaper[][] = [];
 
@@ -93,8 +133,25 @@ async function uploadToSupabase(
   let errorCount = 0;
 
   for (let i = 0; i < batches.length; i++) {
-    const batch = batches[i].map(transformData);
-    
+    console.log(`Processing batch ${i + 1}/${batches.length}...`);
+
+    // Transform papers with embeddings sequentially to respect rate limits
+    const batch: DatabaseRow[] = [];
+    for (let j = 0; j < batches[i].length; j++) {
+      const transformed = await transformData(batches[i][j]);
+      batch.push(transformed);
+
+      // Progress indicator within batch
+      if ((j + 1) % 10 === 0) {
+        console.log(`  Processed ${j + 1}/${batches[i].length} papers in batch ${i + 1}`);
+      }
+
+      // Small delay between embedding requests to avoid rate limits
+      if (j < batches[i].length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+
     const { data: result, error } = await supabase
       .from('reef_papers')
       .insert(batch);
@@ -107,7 +164,7 @@ async function uploadToSupabase(
       console.log(`Batch ${i + 1}/${batches.length} uploaded successfully`);
     }
 
-    // Small delay to avoid rate limits
+    // Small delay between batches
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 
