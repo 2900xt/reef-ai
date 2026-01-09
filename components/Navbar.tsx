@@ -28,15 +28,27 @@ export default function Navbar() {
   const handleSignOut = async () => {
     await signOut();
     setDropdownOpen(false);
-    router.push("/auth/signup");
+    router.push("/auth/login");
   };
 
   // Get user initials for the avatar
   const getUserInitials = () => {
     if (!user) return "";
     const metadata = user.user_metadata;
-    if (metadata?.firstName && metadata?.lastName) {
-      return `${metadata.firstName[0]}${metadata.lastName[0]}`.toUpperCase();
+    // For Google OAuth, use full_name or name
+    if (metadata?.full_name) {
+      const names = metadata.full_name.split(' ');
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+      }
+      return names[0][0].toUpperCase();
+    }
+    if (metadata?.name) {
+      const names = metadata.name.split(' ');
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+      }
+      return names[0][0].toUpperCase();
     }
     if (user.email) {
       return user.email[0].toUpperCase();
@@ -89,9 +101,7 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 py-1 z-50">
                   <div className="px-4 py-2 border-b border-white/10">
                     <p className="text-sm font-medium text-white truncate">
-                      {user.user_metadata?.firstName
-                        ? `${user.user_metadata.firstName} ${user.user_metadata.lastName || ""}`
-                        : user.email}
+                      {user.user_metadata?.full_name || user.user_metadata?.name || user.email}
                     </p>
                     <p className="text-xs text-white/50 truncate">{user.email}</p>
                   </div>
@@ -115,15 +125,14 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Sign In / Sign Up buttons for unauthenticated users */}
+          {/* Sign In button for unauthenticated users */}
           {!loading && !user && (
             <div className="flex items-center gap-3">
-              
               <Link
-                href="/auth/signup"
+                href="/auth/login"
                 className="text-sm font-medium px-4 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 transition-all duration-300"
               >
-                Sign Up
+                Sign In
               </Link>
             </div>
           )}

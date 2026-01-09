@@ -2,29 +2,16 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import {
-  Key,
-  Copy,
-  Eye,
-  EyeOff,
-  Activity,
-  Zap,
-  Clock,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle2,
-  RefreshCw,
-} from "lucide-react";
+import { useEffect } from "react";
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Redirect unauthenticated users to signup
+  // Redirect unauthenticated users to login
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/auth/signup");
+      router.push("/auth/login");
     }
   }, [user, loading, router]);
 
@@ -40,7 +27,10 @@ export default function Home() {
     return null;
   }
 
-  const firstName = user.user_metadata?.firstName || "Developer";
+  // Get first name from Google OAuth metadata
+  const metadata = user.user_metadata || {};
+  const fullName = metadata.full_name || metadata.name || "";
+  const firstName = fullName.split(" ")[0] || "Researcher";
 
   return (
     <div className="min-h-screen bg-slate-950 pt-16">

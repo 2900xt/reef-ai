@@ -2,64 +2,18 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import {
-  User,
-  Mail,
-  Building,
-  Shield,
-  Key,
-  Copy,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  RefreshCw,
-  Trash2,
-  Plus,
-  AlertCircle,
-  Save,
-} from "lucide-react";
+import { useEffect } from "react";
+import { User, Mail, Shield } from "lucide-react";
 
 export default function AccountSettings() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Profile form state
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    firstName: "",
-    lastName: "",
-    company: "",
-  });
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSaved, setProfileSaved] = useState(false);
-
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/auth/signup");
+      router.push("/auth/login");
     }
   }, [user, loading, router]);
-
-  useEffect(() => {
-    if (user) {
-      const metadata = user.user_metadata || {};
-      setProfileForm({
-        firstName: metadata.firstName || "",
-        lastName: metadata.lastName || "",
-        company: metadata.company || "",
-      });
-    }
-  }, [user]);
-
-  const handleProfileSave = async () => {
-    setProfileSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setProfileSaving(false);
-    setProfileSaved(true);
-    setIsEditingProfile(false);
-    setTimeout(() => setProfileSaved(false), 3000);
-  };
 
   if (loading) {
     return (
@@ -74,6 +28,8 @@ export default function AccountSettings() {
   }
 
   const metadata = user.user_metadata || {};
+  const displayName = metadata.full_name || metadata.name || user.email;
+  const avatarUrl = metadata.avatar_url || metadata.picture;
 
   return (
     <div className="min-h-screen bg-slate-950 pt-20 pb-12 px-4">
@@ -86,100 +42,30 @@ export default function AccountSettings() {
       <div className="relative z-10 max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8">Account Settings</h1>
 
-        {/* Success Message */}
-        {profileSaved && (
-          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-400/30 rounded-lg flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-            <p className="text-emerald-400 font-medium">Profile updated successfully!</p>
-          </div>
-        )}
-
         {/* Profile Section */}
         <div className="bg-slate-900/50 border border-white/10 rounded-xl p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-              <User className="w-5 h-5 text-cyan-400" />
-              Profile Information
-            </h2>
-            {!isEditingProfile ? (
-              <button
-                onClick={() => setIsEditingProfile(true)}
-                className="px-4 py-2 text-sm font-medium text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10 rounded-lg transition-colors"
-              >
-                Edit Profile
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setIsEditingProfile(false);
-                    setProfileForm({
-                      firstName: metadata.firstName || "",
-                      lastName: metadata.lastName || "",
-                      company: metadata.company || "",
-                    });
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleProfileSave}
-                  disabled={profileSaving}
-                  className="px-4 py-2 text-sm font-medium bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {profileSaving ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  Save
-                </button>
-              </div>
-            )}
-          </div>
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <User className="w-5 h-5 text-cyan-400" />
+            Profile Information
+          </h2>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Avatar and Name */}
+            <div className="flex items-center gap-4 mb-6">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="w-16 h-16 rounded-full border-2 border-cyan-400/50"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold">
+                  {displayName?.[0]?.toUpperCase() || "U"}
+                </div>
+              )}
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">
-                  First Name
-                </label>
-                {isEditingProfile ? (
-                  <input
-                    type="text"
-                    value={profileForm.firstName}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, firstName: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-white/20 rounded-lg text-white focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-                    placeholder="John"
-                  />
-                ) : (
-                  <div className="px-4 py-2.5 bg-slate-800/50 border border-white/10 rounded-lg text-white">
-                    {metadata.firstName || "Not set"}
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">
-                  Last Name
-                </label>
-                {isEditingProfile ? (
-                  <input
-                    type="text"
-                    value={profileForm.lastName}
-                    onChange={(e) =>
-                      setProfileForm({ ...profileForm, lastName: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-white/20 rounded-lg text-white focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-                    placeholder="Doe"
-                  />
-                ) : (
-                  <div className="px-4 py-2.5 bg-slate-800/50 border border-white/10 rounded-lg text-white">
-                    {metadata.lastName || "Not set"}
-                  </div>
-                )}
+                <p className="text-lg font-medium text-white">{displayName}</p>
+                <p className="text-sm text-white/50">Signed in with Google</p>
               </div>
             </div>
 
@@ -188,37 +74,12 @@ export default function AccountSettings() {
                 <Mail className="w-4 h-4" />
                 Email Address
               </label>
-              <div className="px-4 py-2.5 bg-slate-800/50 border border-white/10 rounded-lg text-white/50">
+              <div className="px-4 py-2.5 bg-slate-800/50 border border-white/10 rounded-lg text-white">
                 {user.email}
-                <span className="text-xs text-white/30 ml-2">(cannot be changed)</span>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1 flex items-center gap-1">
-                <Building className="w-4 h-4" />
-                Company / Organization
-              </label>
-              {isEditingProfile ? (
-                <input
-                  type="text"
-                  value={profileForm.company}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, company: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-800/50 border border-white/20 rounded-lg text-white focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-                  placeholder="Acme Corporation"
-                />
-              ) : (
-                <div className="px-4 py-2.5 bg-slate-800/50 border border-white/10 rounded-lg text-white">
-                  {metadata.company || "Not set"}
-                </div>
-              )}
             </div>
           </div>
         </div>
-
-        
 
         {/* Account Details Section */}
         <div className="bg-slate-900/50 border border-white/10 rounded-xl p-6">

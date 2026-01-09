@@ -1,3 +1,5 @@
+Reef: Personal Research Assistant ai that helps people track new papers in areas of their interest by webscraping common popular journal websites and notifying them sounds interesting
+
 Phase 1: MVP (1-2 weeks)
 1. Supabase Schema Setup
 

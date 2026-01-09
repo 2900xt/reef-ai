@@ -8,8 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, metadata?: { firstName?: string; lastName?: string; company?: string }) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -41,25 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
-  const signUp = async (
-    email: string,
-    password: string,
-    metadata?: { firstName?: string; lastName?: string; company?: string }
-  ) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
       options: {
-        data: metadata,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
-    });
-    return { error };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
     });
     return { error };
   };
@@ -69,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
