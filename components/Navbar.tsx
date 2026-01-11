@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, User } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -106,12 +106,12 @@ export default function Navbar() {
                     <p className="text-xs text-white/50 truncate">{user.email}</p>
                   </div>
                   <Link
-                    href="/account"
+                    href="/profile"
                     onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
                   >
-                    <Settings className="w-4 h-4" />
-                    Account Settings
+                    <User className="w-4 h-4" />
+                    Profile
                   </Link>
                   <button
                     onClick={handleSignOut}

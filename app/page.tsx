@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Search, FileText, Calendar, Users, ExternalLink, Loader2 } from "lucide-react";
+import { FileText, Calendar, Users, ExternalLink, Loader2, ArrowUp } from "lucide-react";
 
 interface Paper {
   id: string;
@@ -25,7 +25,6 @@ export default function Home() {
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect unauthenticated users to login
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth/login");
@@ -42,9 +41,7 @@ export default function Home() {
     try {
       const response = await fetch("/api/papers/search", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           abstract: searchQuery,
           matchCount: 10,
@@ -52,9 +49,7 @@ export default function Home() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to search papers");
-      }
+      if (!response.ok) throw new Error("Failed to search papers");
 
       const data = await response.json();
       setResults(data.papers || []);
@@ -81,163 +76,140 @@ export default function Home() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
-
-  // Get first name from Google OAuth metadata
-  const metadata = user.user_metadata || {};
-  const fullName = metadata.full_name || metadata.name || "";
-  const firstName = fullName.split(" ")[0] || "Researcher";
+  if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-950 pt-16">
+    <div className="min-h-screen bg-slate-950 pt-14">
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px]" />
+        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[150px]" />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
-        {/* Welcome Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {firstName}
-          </h1>
-          <p className="text-white/60">
-            Search for related research papers by entering an abstract below.
-          </p>
+      <div className="relative z-10 flex flex-col h-[calc(100vh-56px)]">
+        {/* Results area - scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          {!hasSearched ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <h1 className="text-2xl font-semibold text-white mb-2">What paper are you looking for?</h1>
+                <p className="text-white/50 text-sm">Paste an abstract to find similar research papers</p>
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-3xl mx-auto px-4 py-6">
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {isSearching ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
+                  <span className="ml-2 text-white/60">Searching papers...</span>
+                </div>
+              ) : results.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                  <p className="text-white/50 text-sm">No papers found. Try a different abstract.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-white/40 mb-4">Found {results.length} related papers</p>
+                  {results.map((paper, index) => (
+                    <div
+                      key={paper.id || index}
+                      className="bg-slate-900/40 border border-white/5 rounded-lg p-4 hover:border-white/10 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-cyan-500/10 text-cyan-400 text-xs font-medium rounded-full">
+                          {index + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="text-sm font-medium text-white leading-snug">
+                              {paper.title || "Untitled Paper"}
+                            </h3>
+                            {paper.similarity !== undefined && (
+                              <span className="flex-shrink-0 text-xs font-medium text-cyan-400">
+                                {(paper.similarity * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3 mt-1.5 text-xs text-white/40">
+                            {paper.authors && (
+                              <span className="flex items-center gap-1 truncate max-w-[200px]">
+                                <Users className="w-3 h-3" />
+                                {paper.authors}
+                              </span>
+                            )}
+                            {paper.publish_date && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {new Date(paper.publish_date).getFullYear()}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-white/50 mt-2 line-clamp-2 leading-relaxed">
+                            {paper.abstract || "No abstract available."}
+                          </p>
+
+                          {paper.doi && (
+                            <a
+                              href={`https://doi.org/${paper.doi}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 mt-2 text-xs text-cyan-400/70 hover:text-cyan-400 transition-colors"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              DOI
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Search Section */}
-        <div className="mb-8">
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-            <label htmlFor="abstract-input" className="block text-sm font-medium text-white/80 mb-3">
-              Enter an abstract to find similar papers
-            </label>
-            <textarea
-              id="abstract-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Paste or type a research abstract here..."
-              className="w-full h-40 px-4 py-3 bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 resize-none transition-all"
-            />
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-white/40">
-                Press Enter or click Search to find related papers
-              </p>
+        {/* Search input - fixed at bottom */}
+        <div className="border-t border-white/5 bg-slate-950/80 backdrop-blur-sm">
+          <div className="max-w-3xl mx-auto px-4 py-3">
+            <div className="relative">
+              <textarea
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Paste an abstract to search..."
+                rows={1}
+                className="w-full pl-4 pr-12 py-3 bg-slate-800/50 border border-white/10 rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-cyan-500/50 resize-none transition-colors"
+                style={{ minHeight: "48px", maxHeight: "120px" }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = "48px";
+                  target.style.height = Math.min(target.scrollHeight, 120) + "px";
+                }}
+              />
               <button
                 onClick={handleSearch}
                 disabled={isSearching || !searchQuery.trim()}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-cyan-500/25 disabled:shadow-none"
+                className="absolute right-2 bottom-2 p-2 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
                 {isSearching ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Searching...
-                  </>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
                 ) : (
-                  <>
-                    <Search className="w-4 h-4" />
-                    Search
-                  </>
+                  <ArrowUp className="w-4 h-4 text-white" />
                 )}
               </button>
             </div>
           </div>
         </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
-            {error}
-          </div>
-        )}
-
-        {/* Results Section */}
-        {hasSearched && !isSearching && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">
-                {results.length > 0 ? `Found ${results.length} related papers` : "No results found"}
-              </h2>
-            </div>
-
-            {results.length === 0 && (
-              <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl p-8 text-center">
-                <FileText className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                <p className="text-white/60">
-                  No papers found matching your abstract. Try a different search query.
-                </p>
-              </div>
-            )}
-
-            {results.map((paper, index) => (
-              <div
-                key={paper.id || index}
-                className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-cyan-500/30 transition-all duration-200"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-cyan-500/20 text-cyan-400 text-sm font-medium rounded-full">
-                        {index + 1}
-                      </span>
-                      <h3 className="text-lg font-medium text-white line-clamp-2">
-                        {paper.title || "Untitled Paper"}
-                      </h3>
-                    </div>
-
-                    {paper.authors && (
-                      <div className="flex items-center gap-2 text-sm text-white/60 mb-2 ml-11">
-                        <Users className="w-4 h-4 flex-shrink-0" />
-                        <span className="line-clamp-1">{paper.authors}</span>
-                      </div>
-                    )}
-
-                    {paper.publish_date && (
-                      <div className="flex items-center gap-2 text-sm text-white/60 mb-3 ml-11">
-                        <Calendar className="w-4 h-4 flex-shrink-0" />
-                        <span>{new Date(paper.publish_date).toLocaleDateString()}</span>
-                        {paper.journal_ref && (
-                          <span className="text-white/40">• {paper.journal_ref}</span>
-                        )}
-                      </div>
-                    )}
-
-                    <p className="text-sm text-white/70 line-clamp-3 ml-11">
-                      {paper.abstract || "No abstract available."}
-                    </p>
-
-                    {paper.doi && (
-                      <div className="mt-3 ml-11">
-                        <a
-                          href={`https://doi.org/${paper.doi}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          View on DOI
-                        </a>
-                      </div>
-                    )}
-                  </div>
-
-                  {paper.similarity !== undefined && (
-                    <div className="flex-shrink-0 text-right">
-                      <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
-                        {(paper.similarity * 100).toFixed(1)}%
-                      </div>
-                      <div className="text-xs text-white/40">similarity</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
