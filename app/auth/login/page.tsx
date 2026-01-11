@@ -70,9 +70,19 @@ export default function LoginPage() {
   const [showSignUpTooltip, setShowSignUpTooltip] = useState(false);
 
   // Redirect if already logged in
-  if (!loading && user) {
-    router.push("/");
-    return null;
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace("/");
+    }
+  }, [user, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Show nothing while checking auth or redirecting
+  if (loading || user) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500"></div>
+      </div>
+    );
   }
 
   const handleGoogleSignIn = async () => {
