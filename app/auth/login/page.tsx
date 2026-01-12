@@ -64,10 +64,16 @@ function ScrollingColumn({ snippets, reverse }: { snippets: string[]; reverse?: 
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading, signInWithGoogle, signInWithEmail } = useAuth();
   const [error, setError] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showSignUpTooltip, setShowSignUpTooltip] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Check if running locally
+  const isLocal = typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   // Redirect if already logged in
   useEffect(() => {
@@ -95,6 +101,20 @@ export default function LoginPage() {
       setError(signInError.message);
       setIsSigningIn(false);
     }
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSigningIn(true);
+
+    const { error: signInError } = await signInWithEmail(email, password);
+
+    if (signInError) {
+      setError(signInError.message);
+      setIsSigningIn(false);
+    }
+    // If successful, the auth state change will trigger redirect
   };
 
   // Split snippets into columns
@@ -163,6 +183,53 @@ export default function LoginPage() {
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-6">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
+          )}
+
+          {/* Local Development Email/Password Form */}
+          {isLocal && (
+            <>
+              <form onSubmit={handleEmailSignIn} className="space-y-4 mb-6">
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-4">
+                  <p className="text-amber-400 text-xs font-medium">Local Development Mode</p>
+                </div>
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSigningIn || loading}
+                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-700 text-white font-medium py-3 px-4 rounded-lg hover:from-cyan-500 hover:to-blue-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                >
+                  {isSigningIn ? "Signing in..." : "Sign in with Email"}
+                </button>
+              </form>
+
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-2 bg-slate-900/95 text-white/40">or</span>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Google Sign In Button */}

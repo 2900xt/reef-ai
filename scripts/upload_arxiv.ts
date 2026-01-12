@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 import OpenAI from 'openai';
 
 // Load environment variables from .env.local
-dotenv.config({ path: '.env', override: true });
+dotenv.config({ path: '.env.local', override: true });
 
 // Type definitions
 interface ArxivPaper {
@@ -40,7 +40,7 @@ interface DatabaseRow {
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Initialize OpenAI client
@@ -50,10 +50,10 @@ const openai = new OpenAI({
 
 
 // From the arXiv dataset, the number of papers to upload up to from the tail
-let numberOfPapersToUpload = 100000;
+let numberOfPapersToUpload = 100;
 
 // From Supabase, the number of papers already uploaded
-let numberOfPapersAlreadyUploaded = 10000;
+let numberOfPapersAlreadyUploaded = 0;
 
 // Call the python script to filter the papers
 execSync(`python3 scripts/extract_arxiv.py ${numberOfPapersToUpload} data/arxiv-output-filtered.json data/arxiv-output.json`, { stdio: 'inherit' });

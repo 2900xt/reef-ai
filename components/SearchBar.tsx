@@ -33,12 +33,22 @@ export default function SearchBar({
   extractedText = "",
 }: SearchBarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showWordCountError, setShowWordCountError] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSearch();
+      handleSearch();
     }
+  };
+
+  const handleSearch = () => {
+    if (wordCount < minWords && !extractedText) {
+      setShowWordCountError(true);
+      return;
+    }
+    setShowWordCountError(false);
+    onSearch();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +66,10 @@ export default function SearchBar({
       fileInputRef.current.value = "";
     }
   };
+
+  // Count words in the query
+  const wordCount = searchQuery.trim().split(/\s+/).filter(word => word.length > 0).length;
+  const minWords = 50;
 
   const isSubmitDisabled = isSearching || isParsingFile || isDisabled || (!searchQuery.trim() && !extractedText);
 
@@ -78,7 +92,10 @@ export default function SearchBar({
       <div className="relative">
         <textarea
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            if (showWordCountError) setShowWordCountError(false);
+          }}
           onKeyDown={handleKeyDown}
           placeholder={selectedFile ? "Ask a question about this document (optional)..." : placeholder}
           rows={compact ? 1 : 3}
@@ -121,7 +138,7 @@ export default function SearchBar({
 
           {/* Search button */}
           <button
-            onClick={onSearch}
+            onClick={handleSearch}
             disabled={isSubmitDisabled}
             className="p-2 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
@@ -134,7 +151,16 @@ export default function SearchBar({
         </div>
       </div>
 
-      {!compact && (
+      {/* Word count error - only show on failed submission */}
+      {showWordCountError && wordCount < minWords && (
+        <div className="mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-xs text-red-400">
+            Please enter at least {minWords} words. Current count: {wordCount} words ({minWords - wordCount} more needed)
+          </p>
+        </div>
+      )}
+
+      {!compact && !showWordCountError && (
         <p className="text-white/30 text-xs mt-3 text-center">
           Supports PDF files up to 10MB
         </p>

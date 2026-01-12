@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquare, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/lib/supabase/client";
 
 interface SearchHistoryItem {
   id: string;
@@ -18,7 +19,9 @@ export default function Sidebar() {
   const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const supabase = createClient();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -30,6 +33,49 @@ export default function Sidebar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Fetch user's credits
+  useEffect(() => {
+    if (user) {
+      fetchCredits();
+    }
+  }, [user]);
+
+  const fetchCredits = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("credits_remaining")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          // Profile doesn't exist, create one
+          const { data: newProfile } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              email: user.email,
+              full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+              credits_remaining: 100,
+            })
+            .select()
+            .single();
+
+          if (newProfile) {
+            setCreditsRemaining(newProfile.credits_remaining);
+          }
+        }
+      } else if (data) {
+        setCreditsRemaining(data.credits_remaining);
+      }
+    } catch (err) {
+      console.error("Error fetching credits:", err);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -65,7 +111,7 @@ export default function Sidebar() {
   return (
     <div className="fixed left-0 top-0 bottom-0 w-64 bg-slate-900 border-r border-white/10 flex flex-col">
       {/* Header with Logo */}
-      <div className="px-3 py-4 flex items-center gap-2">
+      <div className="px-7 py-4 flex items-center gap-2">
         <Image src="/logo.png" alt="Moby Labs Logo" width={20} height={20} />
         <div className="flex items-center gap-1">
           <span className="text-sm font-semibold bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">
@@ -118,6 +164,22 @@ export default function Sidebar() {
       <div className="px-3 py-3 border-t border-white/10">
         {user && (
           <div className="relative" ref={dropdownRef}>
+            {/* Credits Slider */}
+            {creditsRemaining !== null && (
+              <div className="mb-3 px-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-white/50">Credits remaining</span>
+                  <span className="text-xs font-semibold text-cyan-400">{creditsRemaining}</span>
+                </div>
+                <div className="relative h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full transition-all duration-300"
+                    style={{ width: `${creditsRemaining}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="w-full flex items-center gap-2.5 px-2 py-2 rounded-md hover:bg-white/5 transition-colors"

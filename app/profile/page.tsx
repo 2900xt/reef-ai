@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { User, Mail, CreditCard, Key, Plus, Copy, RefreshCw, Loader2, Check, Coins } from "lucide-react";
+import { User, Mail, Plus, Coins } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -13,6 +13,7 @@ interface Profile {
   credits_remaining: number;
   created_at: string | null;
   updated_at: string | null;
+  whitelisted: boolean;
 }
 
 export default function ProfilePage() {
@@ -22,9 +23,6 @@ export default function ProfilePage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,61 +48,15 @@ export default function ProfilePage() {
         .single();
 
       if (error) {
-        if (error.code === "PGRST116") {
-          // Profile doesn't exist, create one
-          const newProfile = {
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-            credits_remaining: 100,
-          };
-
-          const { data: createdProfile, error: createError } = await supabase
-            .from("profiles")
-            .insert(newProfile)
-            .select()
-            .single();
-
-          if (createError) throw createError;
-          setProfile(createdProfile);
-          setFullName(createdProfile.full_name || "");
-        } else {
-          throw error;
-        }
+        throw error;
       } else {
         setProfile(data);
-        setFullName(data.full_name || "");
       }
     } catch (err) {
       console.error("Error fetching profile:", err);
       setError("Failed to load profile");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!user || !profile) return;
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ full_name: fullName })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      setProfile({ ...profile, full_name: fullName });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      console.error("Error saving profile:", err);
-      setError("Failed to save changes");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -166,7 +118,7 @@ export default function ProfilePage() {
               Buy Credits
             </button>
           </div>
-          <p className="text-xs text-white/40 mt-3">Each search uses 1 credit. Credits reset monthly.</p>
+          <p className="text-xs text-white/40 mt-3">Each search uses 1 credit.</p>
         </div>
 
         {/* Profile Section */}
@@ -186,7 +138,7 @@ export default function ProfilePage() {
               />
             ) : (
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-lg font-bold">
-                {(fullName || user.email)?.[0]?.toUpperCase() || "U"}
+                {(profile?.full_name || user.email)?.[0]?.toUpperCase() || "U"}
               </div>
             )}
             <div className="flex-1">
@@ -194,19 +146,17 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Full Name */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-white/70 mb-1.5">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800/50 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500/50 transition-colors"
-              placeholder="Enter your name"
-            />
-          </div>
+          {/* Full Name (read-only) */}
+          {profile?.full_name && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-white/70 mb-1.5">
+                Full Name
+              </label>
+              <div className="px-3 py-2 bg-slate-800/30 border border-white/5 rounded-lg text-white/50 text-sm">
+                {profile.full_name}
+              </div>
+            </div>
+          )}
 
           {/* Email (read-only) */}
           <div className="mb-4">
@@ -218,62 +168,6 @@ export default function ProfilePage() {
               {user.email}
             </div>
           </div>
-
-          {/* Save Button */}
-          <button
-            onClick={handleSave}
-            disabled={saving || fullName === profile?.full_name}
-            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : saved ? (
-              <Check className="w-4 h-4" />
-            ) : null}
-            {saving ? "Saving..." : saved ? "Saved" : "Save Changes"}
-          </button>
-        </div>
-
-        {/* API Key Section */}
-        <div className="bg-slate-900/50 border border-white/10 rounded-xl p-5">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Key className="w-4 h-4 text-cyan-400" />
-            API Keys
-          </h2>
-
-          <p className="text-sm text-white/50 mb-4">
-            Generate API keys to access the search API programmatically.
-          </p>
-
-          <div className="bg-slate-800/30 border border-white/5 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white/40">No API keys generated</span>
-            </div>
-            <p className="text-xs text-white/30">
-              Your API keys will appear here once generated.
-            </p>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              disabled
-              className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white/70 text-sm font-medium rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Generate New Key
-            </button>
-            <button
-              disabled
-              className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white/70 text-sm font-medium rounded-lg transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Regenerate
-            </button>
-          </div>
-
-          <p className="text-xs text-white/30 mt-3">
-            Coming soon: API access for programmatic paper searches.
-          </p>
         </div>
       </div>
     </div>
