@@ -9,3 +9,5 @@
 # billing:
 * create profiles table w/ usage limits for product 1
 * connect stripe for saas payments
+
+reef_searches is a db that contains the searches of all relavant users

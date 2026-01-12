@@ -10,8 +10,8 @@ import { createClient } from "@/lib/supabase/client";
 
 interface SearchHistoryItem {
   id: string;
-  query: string;
-  timestamp: Date;
+  title: string;
+  created_at: string;
 }
 
 export default function Sidebar() {
@@ -34,12 +34,13 @@ export default function Sidebar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch user's credits
+  // Fetch user's credits and search history
   useEffect(() => {
     if (user) {
       fetchCredits();
+      fetchSearchHistory();
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCredits = async () => {
     if (!user) return;
@@ -74,6 +75,28 @@ export default function Sidebar() {
       }
     } catch (err) {
       console.error("Error fetching credits:", err);
+    }
+  };
+
+  const fetchSearchHistory = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("reef_searches")
+        .select("id, title, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error("Error fetching search history:", error);
+        return;
+      }
+
+      setSearchHistory(data || []);
+    } catch (err) {
+      console.error("Error fetching search history:", err);
     }
   };
 
@@ -144,17 +167,15 @@ export default function Sidebar() {
         ) : (
           <div className="space-y-0.5">
             {searchHistory.map((item) => (
-              <button
+              <Link
                 key={item.id}
-                className="w-full text-left px-3 py-2 rounded-md hover:bg-white/5 transition-colors group"
+                href={`/search/${item.id}`}
+                className="block w-full text-left px-3 py-2 rounded-md hover:bg-white/5 transition-colors group"
               >
                 <p className="text-sm text-white/70 truncate group-hover:text-white transition-colors">
-                  {item.query}
+                  {item.title}
                 </p>
-                <p className="text-xs text-white/30 mt-0.5">
-                  {item.timestamp.toLocaleDateString()}
-                </p>
-              </button>
+              </Link>
             ))}
           </div>
         )}

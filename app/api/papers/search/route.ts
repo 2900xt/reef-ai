@@ -1,12 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-);
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,28 +12,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate embedding
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: abstract,
-    });
+    // Create Supabase server client (handles auth automatically)
+    const supabase = await createClient();
 
-    // Find similar papers
-    const { data, error } = await supabase.rpc('match_papers', {
-      query_embedding: embeddingResponse.data[0].embedding,
-      match_threshold: matchThreshold,
-      match_count: matchCount,
-    });
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (error) {
-      console.error('Supabase error:', error);
+    if (authError || !user) {
       return NextResponse.json(
-        { error: 'Failed to search papers' },
-        { status: 500 }
+        { error: 'Authentication required' },
+        { status: 401 }
       );
     }
 
-    return NextResponse.json({ papers: data });
+    // Call the edge function to create embedding and search record
+    const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke(
+      'create-embedding',
+      {
+        body: { abstract },
+      }
+    );
+
+    if (edgeFunctionError) {
+      console.error(edgeFunctionError);
+      return NextResponse.json(
+        { error: edgeFunctionError.context.statusText || 'Failed to create embedding' },
+        { status: edgeFunctionError.context.status || 500}
+      );
+    }
+
+    const searchId = edgeFunctionData.id;
+
+    // Return both the search ID and the papers
+    return NextResponse.json({ searchId });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

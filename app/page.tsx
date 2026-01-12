@@ -4,26 +4,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import PreSearchView from "@/components/PreSearchView";
-import PostSearchView from "@/components/PostSearchView";
-
-interface Paper {
-  id: string;
-  title: string;
-  abstract: string;
-  authors: string;
-  publish_date: string;
-  doi: string | null;
-  journal_ref: string | null;
-  similarity: number;
-}
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [results, setResults] = useState<Paper[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
@@ -75,7 +61,6 @@ export default function Home() {
 
     setIsSearching(true);
     setError(null);
-    setHasSearched(true);
 
     try {
       let queryText = extractedText;
@@ -95,10 +80,21 @@ export default function Home() {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to search papers");
-
       const data = await response.json();
-      setResults(data.papers || []);
+
+      if (!response.ok) {
+        if (response.status === 402) {
+          setError("Insufficient credits. Please add more credits to continue searching.");
+        } else {
+          throw new Error(data.error || "Failed to search papers");
+        }
+        return;
+      }
+
+      // Redirect to the search results page
+      if (data.searchId) {
+        router.push(`/search/${data.searchId}`);
+      }
     } catch (err) {
       setError("An error occurred while searching. Please try again.");
       console.error("Search error:", err);
@@ -127,26 +123,18 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto">
-        {!hasSearched ? (
-          <PreSearchView
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onSearch={handleSearch}
-            isSearching={isSearching}
-            onFileSelect={handleFileSelect}
-            onFileClear={clearFile}
-            selectedFile={selectedFile}
-            isParsingFile={isParsingFile}
-            extractedText={extractedText}
-            error={error}
-          />
-        ) : (
-          <PostSearchView
-            results={results}
-            isSearching={isSearching}
-            error={error}
-          />
-        )}
+        <PreSearchView
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onSearch={handleSearch}
+          isSearching={isSearching}
+          onFileSelect={handleFileSelect}
+          onFileClear={clearFile}
+          selectedFile={selectedFile}
+          isParsingFile={isParsingFile}
+          extractedText={extractedText}
+          error={error}
+        />
       </div>
     </div>
   );

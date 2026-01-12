@@ -38,6 +38,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error("Error fetching profile:", error);
+
+          // If profile doesn't exist (PGRST116), logout the user
+          if (error.code === "PGRST116") {
+            console.log("Profile not found, logging out user");
+            await signOut();
+            window.location.href = "/auth/login";
+            return;
+          }
+
           setIsWhitelisted(false);
         } else {
           setIsWhitelisted(data?.whitelisted || false);
@@ -53,7 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (user) {
       fetchProfile();
     }
-  }, [user, supabase]);
+  }, [user, supabase, signOut]);
 
   if (isAuthPage) {
     return <>{children}</>;
