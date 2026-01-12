@@ -26,18 +26,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Call the edge function to create embedding and search record
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Pass the token explicitly
     const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke(
       'create-embedding',
       {
         body: { abstract },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       }
     );
 
     if (edgeFunctionError) {
-      console.error(edgeFunctionError);
+      // Read the actual response body
+      const errorBody = await edgeFunctionError.context.json();
+      console.error('Edge function error body:', errorBody);
+
       return NextResponse.json(
-        { error: edgeFunctionError.context.statusText || 'Failed to create embedding' },
-        { status: edgeFunctionError.context.status || 500}
+        { error: errorBody },
+        { status: edgeFunctionError.context.status || 500 }
       );
     }
 
