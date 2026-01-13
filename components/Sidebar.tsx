@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { MessageSquare, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
@@ -16,12 +16,18 @@ interface SearchHistoryItem {
 
 export default function Sidebar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+
+  // Extract current search ID from pathname
+  const currentSearchId = pathname?.startsWith('/search/')
+    ? pathname.split('/')[2]
+    : null;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -40,7 +46,7 @@ export default function Sidebar() {
       fetchCredits();
       fetchSearchHistory();
     }
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCredits = async () => {
     if (!user) return;
@@ -166,17 +172,33 @@ export default function Sidebar() {
           <p className="text-xs text-white/30 px-3 py-2">No searches yet</p>
         ) : (
           <div className="space-y-0.5">
-            {searchHistory.map((item) => (
-              <Link
-                key={item.id}
-                href={`/search/${item.id}`}
-                className="block w-full text-left px-3 py-2 rounded-md hover:bg-white/5 transition-colors group"
-              >
-                <p className="text-sm text-white/70 truncate group-hover:text-white transition-colors">
-                  {item.title}
-                </p>
-              </Link>
-            ))}
+            {searchHistory.map((item) => {
+              const isActive = currentSearchId === item.id;
+              return (
+                <Link
+                  key={item.id}
+                  href={`/search/${item.id}`}
+                  className={`relative block w-full text-left px-3 py-2 rounded-md transition-all group ${
+                    isActive
+                      ? "bg-cyan-500/15 border border-cyan-500/30"
+                      : "hover:bg-white/5"
+                  }`}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-r-full" />
+                  )}
+                  <p
+                    className={`text-sm truncate transition-colors ${
+                      isActive
+                        ? "text-cyan-200 font-medium"
+                        : "text-white/70 group-hover:text-white"
+                    }`}
+                  >
+                    {item.title}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
