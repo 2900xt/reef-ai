@@ -14,7 +14,7 @@ const myAbstract = ``;
 // Generate embedding
 const embeddingResponse = await openai.embeddings.create({
   model: "text-embedding-3-small",
-  input: myAbstract,
+  input: myAbstract,  
 });
 
 // Find similar papers
