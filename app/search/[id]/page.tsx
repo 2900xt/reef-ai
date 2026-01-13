@@ -3,7 +3,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { FileText, Calendar, Users, ExternalLink, Loader2 } from "lucide-react";
 
 interface Paper {
@@ -33,7 +32,6 @@ export default function SearchResultsPage() {
   const [results, setResults] = useState<Paper[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -52,32 +50,25 @@ export default function SearchResultsPage() {
     setError(null);
 
     try {
-      // Fetch the search record
-      const { data: search, error: searchError } = await supabase
-        .from("reef_searches")
-        .select("*")
-        .eq("id", searchId)
-        .single();
-
-      if (searchError) {
-        console.error("Supabase error:", searchError);
-        throw new Error("Search record not found");
-      }
-
-      setSearchRecord(search);
-
-      // Fetch similar papers using the embedding
-      const { data: papers, error: papersError } = await supabase.rpc("match_papers", {
-        query_embedding: search.embedding,
-        match_threshold: 0.0,
-        match_count: 10,
+      const response = await fetch(`/api/search/${searchId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+        }),
       });
 
-      if (papersError) {
-        throw new Error("Failed to fetch similar papers");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch search results');
       }
 
-      setResults(papers || []);
+      const data = await response.json();
+
+      setSearchRecord(data.search);
+      setResults(data.papers || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       console.error("Search results error:", err);

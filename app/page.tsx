@@ -70,13 +70,12 @@ export default function Home() {
         queryText = searchQuery.trim();
       }
 
-      const response = await fetch("/api/papers/search", {
+      const response = await fetch("/api/papers/new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           abstract: queryText,
-          matchCount: 10,
-          matchThreshold: 0.0,
+          userId: user!.id,
         }),
       });
 
