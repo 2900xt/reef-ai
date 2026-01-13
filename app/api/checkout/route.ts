@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { stripe, CREDIT_PACKAGES } from '@/lib/stripe/server';
+import { createClient } from '@/lib/supabase/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Check if user is authenticated
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { packageType } = await request.json();
+
+    // Validate package type
+    const creditPackage = CREDIT_PACKAGES[packageType as keyof typeof CREDIT_PACKAGES];
+    if (!creditPackage) {
+      return NextResponse.json(
+        { error: 'Invalid package type' },
+        { status: 400 }
+      );
+    }
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `${creditPackage.credits} Research Credits`,
+              description: `Purchase ${creditPackage.credits} credits for your research assistant`,
+            },
+            unit_amount: creditPackage.price,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${request.headers.get('origin')}/profile?success=true`,
+      cancel_url: `${request.headers.get('origin')}/profile?canceled=true`,
+      client_reference_id: user.id,
+      metadata: {
+        userId: user.id,
+        credits: creditPackage.credits.toString(),
+        packageType,
+      },
+    });
+
+    return NextResponse.json({ sessionId: session.id, url: session.url });
+  } catch (error) {
+    console.error('Checkout error:', error);
+    return NextResponse.json(
+      { error: 'Failed to create checkout session' },
+      { status: 500 }
+    );
+  }
+}

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
+import AppLayout from "@/components/AppLayout";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -11,8 +12,8 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Reef: AI for Researchers | Moby Labs",
-  description: "We do Whale Tracking",
+  title: "Reef: Research Assistant | Moby Labs",
+  description: "The AI Thinktank",
 };
 
 const geistSans = Geist({
@@ -36,8 +37,13 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <Navbar />
-            {children}
+            <Suspense fallback={
+              <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500"></div>
+              </div>
+            }>
+              <AppLayout>{children}</AppLayout>
+            </Suspense>
           </ThemeProvider>
         </AuthProvider>
       </body>
