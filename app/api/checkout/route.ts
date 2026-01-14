@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'payment',
-      success_url: `${request.headers.get('origin')}/profile?success=true`,
+      success_url: `${request.headers.get('origin')}/profile?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.headers.get('origin')}/profile?canceled=true`,
       client_reference_id: user.id,
       metadata: {
