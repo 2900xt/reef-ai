@@ -43,19 +43,48 @@ export default function ProfilePage() {
   useEffect(() => {
     // Check for success/cancel query params
     const params = new URLSearchParams(window.location.search);
-    if (params.get('success')) {
-      setSuccess('Payment successful! Your credits have been added.');
-      // Refresh profile to show updated credits
-      fetchProfile();
-      // Clear the query param
-      window.history.replaceState({}, '', '/profile');
-      // Clear success message after 5 seconds
-      setTimeout(() => setSuccess(null), 5000);
+    const sessionId = params.get('session_id');
+
+    if (params.get('success') && sessionId) {
+      // Verify the session and add credits
+      verifyAndAddCredits(sessionId);
     } else if (params.get('canceled')) {
       setError('Payment was cancelled');
       window.history.replaceState({}, '', '/profile');
     }
   }, []);
+
+  const verifyAndAddCredits = async (sessionId: string) => {
+    try {
+      const response = await fetch('/api/checkout/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setSuccess(`Payment successful! ${data.added} credits have been added.`);
+        // Refresh profile to show updated credits
+        fetchProfile();
+      } else {
+        // Payment might have already been processed by webhook
+        setSuccess('Payment successful! Your credits have been added.');
+        fetchProfile();
+      }
+    } catch (err) {
+      console.error('Verification error:', err);
+      // Still show success since payment went through
+      setSuccess('Payment successful! Your credits should be updated shortly.');
+      fetchProfile();
+    } finally {
+      // Clear the query params
+      window.history.replaceState({}, '', '/profile');
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
+    }
+  };
 
   const fetchProfile = async () => {
     if (!user) return;

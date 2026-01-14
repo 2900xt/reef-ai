@@ -11,17 +11,17 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 export const CREDIT_PACKAGES = {
   SMALL: {
-    credits: 10,
-    price: 500, // $5.00 in cents
+    credits: 100,
+    price: 300, // $3.00 in cents
     priceId: 'price_small', // You'll create this in Stripe Dashboard
   },
   MEDIUM: {
-    credits: 50,
-    price: 2000, // $20.00 in cents
+    credits: 500,
+    price: 1000, // $10.00 in cents
     priceId: 'price_medium',
   },
   LARGE: {
-    credits: 100,
+    credits: 2000,
     price: 3500, // $35.00 in cents
     priceId: 'price_large',
   },
