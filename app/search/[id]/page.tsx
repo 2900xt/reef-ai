@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FileText, Calendar, Users, ExternalLink, Loader2 } from "lucide-react";
+import { FileText, Calendar, Users, ExternalLink, Loader2, ChevronDown } from "lucide-react";
 
 interface Paper {
   id: string;
@@ -19,6 +19,7 @@ interface Paper {
 interface SearchRecord {
   id: string;
   title: string;
+  abstract: string;
   embedding: number[];
   created_at: string;
 }
@@ -35,6 +36,7 @@ export default function SearchResultsPage() {
   const [hoveredPaper, setHoveredPaper] = useState<Paper | null>(null);
   const [leftWidth, setLeftWidth] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [showSearchAbstract, setShowSearchAbstract] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -97,7 +99,6 @@ export default function SearchResultsPage() {
       }
 
       const data = await response.json();
-
       setSearchRecord(data.search);
       setResults(data.papers || []);
     } catch (err) {
@@ -136,25 +137,41 @@ export default function SearchResultsPage() {
           <div className="px-5 py-5">
             {/* Search Title */}
             {searchRecord && (
-              <div className="mb-5 pb-4 border-b border-white/10">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1 h-5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></div>
-                  <h1 className="text-xl font-bold text-white tracking-tight">
+              <div className="mb-4 pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-0.5 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full"></div>
+                  <h1 className="text-lg font-bold text-white tracking-tight">
                     {searchRecord.title}
                   </h1>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-white/40 ml-3">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>
-                    {new Date(searchRecord.created_at).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+                <div className="flex items-center gap-3 ml-2.5">
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/40">
+                    <Calendar className="w-3 h-3" />
+                    <span>
+                      {new Date(searchRecord.created_at).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  {searchRecord.abstract && (
+                    <button
+                      onClick={() => setShowSearchAbstract(!showSearchAbstract)}
+                      className="flex items-center gap-0.5 text-[10px] text-white/35 hover:text-cyan-400 transition-colors"
+                    >
+                      <ChevronDown
+                        className={`w-3 h-3 transition-transform duration-200 ${showSearchAbstract ? 'rotate-180' : ''}`}
+                      />
+                      <span>{showSearchAbstract ? 'Hide' : 'Abstract'}</span>
+                    </button>
+                  )}
                 </div>
+                {showSearchAbstract && searchRecord.abstract && (
+                  <p className="mt-2 ml-2.5 text-[11px] text-white/50 leading-relaxed border-l-2 border-cyan-500/30 pl-2 py-0.5">
+                    {searchRecord.abstract}
+                  </p>
+                )}
               </div>
             )}
 
@@ -184,52 +201,48 @@ export default function SearchResultsPage() {
                     {results.length} papers
                   </span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {results.map((paper, index) => (
                     <div
                       key={paper.id || index}
                       onMouseEnter={() => setHoveredPaper(paper)}
-                      className="group relative bg-slate-800/40 border border-white/5 rounded-lg p-3.5 hover:border-cyan-500/40 hover:bg-slate-800/70 hover:shadow-lg hover:shadow-cyan-500/5 transition-all duration-200 cursor-pointer"
+                      className="group relative bg-slate-800/40 border border-white/5 rounded p-2.5 hover:border-cyan-500/40 hover:bg-slate-800/70 hover:shadow-lg hover:shadow-cyan-500/5 transition-all duration-200 cursor-pointer"
                     >
                       {/* Hover indicator */}
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-l-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-l opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-                      <div className="flex items-start gap-3 pl-1">
-                        <div className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-400 text-xs font-bold rounded-lg border border-cyan-500/20">
+                      <div className="flex items-start gap-2 pl-0.5">
+                        <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-400 text-[10px] font-bold rounded border border-cyan-500/20">
                           {index + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <h3 className="text-[13px] font-semibold text-white leading-tight group-hover:text-cyan-50 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="text-[13px] font-semibold text-white leading-snug group-hover:text-cyan-50 transition-colors">
                               {paper.title || "Untitled Paper"}
                             </h3>
                             {paper.similarity !== undefined && (
-                              <div className="flex-shrink-0 px-2 py-0.5 bg-cyan-500/15 border border-cyan-500/25 rounded text-[11px] font-bold text-cyan-400">
+                              <div className="flex-shrink-0 px-1.5 py-0.5 bg-cyan-500/15 border border-cyan-500/25 rounded text-[10px] font-bold text-cyan-400">
                                 {(paper.similarity * 100).toFixed(0)}%
                               </div>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className="flex items-center gap-2 mt-1">
                             {paper.authors && (
-                              <div className="flex items-center gap-1.5 text-[11px] text-white/50">
+                              <div className="flex items-center gap-1 text-[10px] text-white/50">
                                 <Users className="w-3 h-3 text-white/40" />
-                                <span className="truncate max-w-[180px] font-medium">
+                                <span className="truncate max-w-[160px] font-medium">
                                   {paper.authors.split(',')[0]}{paper.authors.includes(',') && ' et al.'}
                                 </span>
                               </div>
                             )}
                             {paper.publish_date && (
-                              <div className="flex items-center gap-1 text-[11px] text-white/50 font-medium">
+                              <div className="flex items-center gap-1 text-[10px] text-white/50 font-medium">
                                 <span>•</span>
                                 <span>{new Date(paper.publish_date).getFullYear()}</span>
                               </div>
                             )}
                           </div>
-
-                          <p className="text-[11px] text-white/45 line-clamp-2 leading-relaxed">
-                            {paper.abstract || "No abstract available."}
-                          </p>
                         </div>
                       </div>
                     </div>

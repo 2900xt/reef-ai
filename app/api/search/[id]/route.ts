@@ -64,6 +64,7 @@ export async function POST(
       search: {
         id: search.id,
         title: search.title,
+        abstract: search.abstract || "NO ABSTRACT :(",
         created_at: search.created_at,
       },
       papers: papers || [],

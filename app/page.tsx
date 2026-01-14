@@ -15,6 +15,7 @@ export default function Home() {
   const [extractedText, setExtractedText] = useState<string>("");
   const [isParsingFile, setIsParsingFile] = useState(false);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/auth/login");
@@ -110,7 +111,7 @@ export default function Home() {
     );
   }
 
-  if (!user) return null;
+  if (!user) return "sign in pls";
 
   return (
     <div className="relative flex flex-col h-screen">

@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         embedding: embedding,
         title: titleResponse.choices[0].message?.content?.trim() || 'Untitled',
+        abstract: abstract,
       })
       .select()
       .single();
