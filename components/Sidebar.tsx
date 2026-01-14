@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { MessageSquare, User, LogOut } from "lucide-react";
+import { MessageSquare, User, LogOut, Code2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 
@@ -201,6 +201,17 @@ export default function Sidebar() {
             })}
           </div>
         )}
+      </div>
+
+      {/* API Docs Link */}
+      <div className="px-3 pb-2">
+        <Link
+          href="/docs"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-white/5 transition-colors text-white/50 hover:text-white/80"
+        >
+          <Code2 className="w-4 h-4" />
+          <span className="text-xs">API Docs</span>
+        </Link>
       </div>
 
       {/* Profile Section */}

@@ -18,6 +18,7 @@ interface Paper {
 
 interface SearchRecord {
   id: string;
+  user_id: string;
   title: string;
   abstract: string;
   embedding: number[];

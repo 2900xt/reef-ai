@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     const embedding = embeddingResponse.data[0].embedding;
 
-    // From the profiles table, subtract 1 credit from the user, but first check if they have enough credits
+    // Make sure that the user exists and fetch their profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('credits_remaining')
@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Free for public use - no credit deduction
     if (profile.credits_remaining <= 0) {
       return NextResponse.json(
         { error: 'Insufficient credits' },

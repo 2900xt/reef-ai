@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Mail, Plus, Coins, Loader2, ChevronDown } from "lucide-react";
+import { Mail, Plus, Coins, Loader2, ChevronDown, Copy, Check, Key } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -266,6 +267,36 @@ export default function ProfilePage() {
             </button>
           </div>
         )}
+
+        {/* API Key */}
+        <div className="bg-slate-900/60 border border-white/5 rounded p-4 mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <Key className="w-3 h-3 text-white/40" />
+              <p className="text-[10px] text-white/40 uppercase tracking-wider font-medium">API Key</p>
+            </div>
+            <a href="/docs" className="text-[10px] text-cyan-400 hover:underline">View docs</a>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-[11px] font-mono text-white/60 bg-slate-950/50 px-2 py-1.5 rounded truncate">
+              {user.id}
+            </code>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(user.id);
+                setCopiedKey(true);
+                setTimeout(() => setCopiedKey(false), 2000);
+              }}
+              className="p-1.5 hover:bg-white/10 rounded transition-colors"
+            >
+              {copiedKey ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Copy className="w-3.5 h-3.5 text-white/40" />
+              )}
+            </button>
+          </div>
+        </div>
 
         {/* Account Info */}
         <div className="bg-slate-900/60 border border-white/5 rounded p-4">
