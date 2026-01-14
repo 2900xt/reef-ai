@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import PreSearchView from "@/components/PreSearchView";
+import ScrollingAbstractsBackground from "@/components/ScrollingAbstractsBackground";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -114,12 +115,9 @@ export default function Home() {
   if (!user) return "sign in pls";
 
   return (
-    <div className="relative flex flex-col h-screen">
-      {/* Background effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[150px]" />
-      </div>
+    <div className="relative flex flex-col h-screen bg-slate-950 overflow-hidden">
+      {/* Scrolling abstracts background */}
+      <ScrollingAbstractsBackground />
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto">
