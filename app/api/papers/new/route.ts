@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Make sure that the user exists and fetch their profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('credits_remaining')
+      .select('credits_remaining, whitelisted')
       .eq('id', userId)
       .single();
 
@@ -85,6 +85,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'User profile not found' },
         { status: 404 }
+      );
+    }
+
+    // Check if user is whitelisted
+    if (!profile.whitelisted) {
+      return NextResponse.json(
+        { error: 'Forbidden: User is not whitelisted' },
+        { status: 403 }
       );
     }
     

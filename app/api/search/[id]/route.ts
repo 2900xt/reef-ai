@@ -50,6 +50,27 @@ export async function POST(
       );
     }
 
+    // Check if user is whitelisted
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('whitelisted')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!profile.whitelisted) {
+      return NextResponse.json(
+        { error: 'Forbidden: User is not whitelisted' },
+        { status: 403 }
+      );
+    }
+
     // Fetch the search record and verify ownership
     const { data: search, error: searchError } = await supabase
       .from('reef_searches')
