@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Mail, Plus, Coins, Loader2, ChevronDown, Copy, Check, Key } from "lucide-react";
+import { Mail, Plus, Coins, Loader2, ChevronDown, Copy, Check, Key, Eye, EyeOff } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -278,9 +279,23 @@ export default function ProfilePage() {
             <a href="/docs" className="text-[10px] text-cyan-400 hover:underline">View docs</a>
           </div>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-[11px] font-mono text-white/60 bg-slate-950/50 px-2 py-1.5 rounded truncate">
-              {user.id}
-            </code>
+            <button
+              onClick={() => setShowApiKey(!showApiKey)}
+              className="flex-1 text-left text-[11px] font-mono text-white/60 bg-slate-950/50 px-2 py-1.5 rounded truncate hover:bg-slate-950/70 transition-colors cursor-pointer"
+            >
+              {showApiKey ? user.id : '••••••••••••••••••••••••••••••••••••'}
+            </button>
+            <button
+              onClick={() => setShowApiKey(!showApiKey)}
+              className="p-1.5 hover:bg-white/10 rounded transition-colors"
+              title={showApiKey ? "Hide API key" : "Show API key"}
+            >
+              {showApiKey ? (
+                <EyeOff className="w-3.5 h-3.5 text-white/40" />
+              ) : (
+                <Eye className="w-3.5 h-3.5 text-white/40" />
+              )}
+            </button>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(user.id);
@@ -288,6 +303,7 @@ export default function ProfilePage() {
                 setTimeout(() => setCopiedKey(false), 2000);
               }}
               className="p-1.5 hover:bg-white/10 rounded transition-colors"
+              title="Copy API key"
             >
               {copiedKey ? (
                 <Check className="w-3.5 h-3.5 text-emerald-400" />

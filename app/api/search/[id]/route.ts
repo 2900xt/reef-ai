@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rate-limit';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,8 +12,28 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await request.json();
+    const body = await request.json();
+    const { userId } = body;
     const { id: searchId } = await params;
+
+    // Rate limiting - use userId if available, otherwise IP
+    const identifier = getClientIdentifier(request, userId);
+    const rateLimit = checkRateLimit(identifier, 'search/read', RATE_LIMITS.SEARCH_READ);
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.resetAt.toString(),
+            'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
 
     // Validate required fields
     if (!userId || typeof userId !== 'string') {

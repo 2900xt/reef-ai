@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, CREDIT_PACKAGES } from '@/lib/stripe/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +17,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Rate limiting by user ID
+    const identifier = getClientIdentifier(request, user.id);
+    const rateLimit = checkRateLimit(identifier, 'checkout', RATE_LIMITS.CHECKOUT);
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.resetAt.toString(),
+            'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+          },
+        }
       );
     }
 

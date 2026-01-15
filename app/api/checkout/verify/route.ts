@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Initialize Supabase with service role key for admin operations
 const supabaseAdmin = createClient(
@@ -13,6 +14,25 @@ const processedSessions = new Set<string>();
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting by IP (no auth available before verification)
+    const identifier = getClientIdentifier(request);
+    const rateLimit = checkRateLimit(identifier, 'checkout/verify', RATE_LIMITS.CHECKOUT);
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.resetAt.toString(),
+            'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
+
     const { sessionId } = await request.json();
 
     if (!sessionId) {

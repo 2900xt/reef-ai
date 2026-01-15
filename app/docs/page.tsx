@@ -128,7 +128,7 @@ export default function DocsPage() {
                   <button
                     onClick={() => copyToClipboard(`curl -X POST ${baseUrl}/api/papers/new \\
   -H "Content-Type: application/json" \\
-  -d '{"userId": "${user.id}", "abstract": "Your paper abstract here..."}'`, "papers-new-curl")}
+  -d '{"userId": "YOUR_API_KEY", "abstract": "Your paper abstract here..."}'`, "papers-new-curl")}
                     className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded transition-colors"
                   >
                     {copiedEndpoint === "papers-new-curl" ? (
@@ -140,7 +140,7 @@ export default function DocsPage() {
                   <pre className="text-[11px] font-mono text-white/60 overflow-x-auto pr-8">
 {`curl -X POST ${baseUrl}/api/papers/new \\
   -H "Content-Type: application/json" \\
-  -d '{"userId": "${user.id}", "abstract": "..."}'`}
+  -d '{"userId": "YOUR_API_KEY", "abstract": "..."}'`}
                   </pre>
                 </div>
               </div>

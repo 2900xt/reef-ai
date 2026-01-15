@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
-import { randomUUID } from 'crypto';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rate-limit';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,7 +11,27 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, abstract } = await request.json();
+    const body = await request.json();
+    const { userId, abstract } = body;
+
+    // Rate limiting - use userId if available, otherwise IP
+    const identifier = getClientIdentifier(request, userId);
+    const rateLimit = checkRateLimit(identifier, 'papers/new', RATE_LIMITS.SEARCH_CREATE);
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.resetAt.toString(),
+            'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
 
     // Validate required fields
     if (!userId || typeof userId !== 'string') {

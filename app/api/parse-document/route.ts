@@ -1,8 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import pdf from "pdf-parse/lib/pdf-parse";
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting by IP (no userId available for this endpoint)
+    const identifier = getClientIdentifier(request);
+    const rateLimit = checkRateLimit(identifier, 'parse-document', RATE_LIMITS.PARSE_DOCUMENT);
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.resetAt.toString(),
+            'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
