@@ -94,7 +94,7 @@ export default function LoginPage() {
               Reef, by Moby Labs
             </h1>
             <p className="text-white/50 text-sm mt-1">
-              Automate your research workflow with AI
+              AI-powered abstract searcher
             </p>
           </div>
 
