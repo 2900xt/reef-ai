@@ -278,7 +278,7 @@ export default function ProfilePage() {
               <Key className="w-3 h-3 text-white/40" />
               <p className="text-[10px] text-white/40 uppercase tracking-wider font-medium">API Key</p>
             </div>
-            <a href="/docs" className="text-[10px] text-cyan-400 hover:underline">View docs</a>
+            <a href="/reef/docs" className="text-[10px] text-cyan-400 hover:underline">View docs</a>
           </div>
           <div className="flex items-center gap-2">
             <button
