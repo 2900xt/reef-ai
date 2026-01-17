@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import Sidebar from "./Sidebar";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function ReefAppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: authLoading, signOut } = useAuth();
   const supabase = createClient();

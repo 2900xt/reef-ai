@@ -4,7 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
-import AppLayout from "@/components/AppLayout";
+import ReefAppLayout from "@/components/ReefAppLayout";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -12,7 +12,7 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Reef - Abstract Search",
+  title: "Moby Labs: AI Researcher",
   description: "The AI Thinktank",
 };
 
@@ -42,7 +42,7 @@ export default function RootLayout({
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500"></div>
               </div>
             }>
-              <AppLayout>{children}</AppLayout>
+              {children}
             </Suspense>
           </ThemeProvider>
         </AuthProvider>

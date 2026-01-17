@@ -1,138 +1,32 @@
 "use client";
-
-import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import PreSearchView from "@/components/PreSearchView";
 import ScrollingAbstractsBackground from "@/components/ScrollingAbstractsBackground";
+import Link from "next/link";
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [extractedText, setExtractedText] = useState<string>("");
-  const [isParsingFile, setIsParsingFile] = useState(false);
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/auth/login");
-    }
-  }, [user, loading]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleFileSelect = async (file: File) => {
-    setSelectedFile(file);
-    setIsParsingFile(true);
-    setError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/parse-document", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to parse document");
-      }
-
-      setExtractedText(data.text);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to parse document");
-      setSelectedFile(null);
-      setExtractedText("");
-    } finally {
-      setIsParsingFile(false);
-    }
-  };
-
-  const clearFile = () => {
-    setSelectedFile(null);
-    setExtractedText("");
-  };
-
-  const handleSearch = async () => {
-    if (!extractedText && !searchQuery.trim()) return;
-
-    setIsSearching(true);
-    setError(null);
-
-    try {
-      let queryText = extractedText;
-      if (searchQuery.trim() && extractedText) {
-        queryText = `${searchQuery.trim()}\n\nDocument content:\n${extractedText}`;
-      } else if (searchQuery.trim()) {
-        queryText = searchQuery.trim();
-      }
-
-      const response = await fetch("/api/papers/new", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          abstract: queryText,
-          userId: user!.id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 402) {
-          setError("Insufficient credits. Please add more credits to continue searching.");
-        } else {
-          throw new Error(data.error || "Failed to search papers");
-        }
-        return;
-      }
-
-      // Redirect to the search results page
-      if (data.searchId) {
-        router.push(`/search/${data.searchId}`);
-      }
-    } catch (err) {
-      setError("An error occurred while searching. Please try again.");
-      console.error("Search error:", err);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500"></div>
-      </div>
-    );
-  }
-
-  if (!user) return "sign in pls";
-
   return (
     <div className="relative flex flex-col h-screen bg-slate-950 overflow-hidden">
-      {/* Scrolling abstracts background */}
       <ScrollingAbstractsBackground />
 
-      {/* Main Content */}
-      <div className="relative z-10 flex-1 overflow-y-auto">
-        <PreSearchView
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          onSearch={handleSearch}
-          isSearching={isSearching}
-          onFileSelect={handleFileSelect}
-          onFileClear={clearFile}
-          selectedFile={selectedFile}
-          isParsingFile={isParsingFile}
-          extractedText={extractedText}
-          error={error}
-        />
+      {/* Hero content */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 text-center">
+        <h1 className="text-5xl sm:text-6xl font-bold text-white tracking-tight">
+          Moby Labs
+        </h1>
+        <p className="mt-4 text-lg text-white/60 max-w-md">
+          Full AI research automation. Parse, search, discover, publish.
+        </p>
+
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <Link
+            href="/reef"
+            className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-lg transition-colors"
+          >
+            Try Reef
+          </Link>
+          <p className="text-sm text-white/40">
+            Most tools still cooking. Reef is live.
+          </p>
+        </div>
       </div>
     </div>
   );
