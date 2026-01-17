@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ReefAppLayout from "@/components/ReefAppLayout";
+import ReefAppLayout from "@/components/reef/ReefAppLayout";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`

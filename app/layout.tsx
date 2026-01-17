@@ -4,7 +4,6 @@ import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
-import ReefAppLayout from "@/components/ReefAppLayout";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`

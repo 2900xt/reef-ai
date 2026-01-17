@@ -248,7 +248,7 @@ export default function Sidebar() {
               return (
                 <Link
                   key={item.id}
-                  href={`/search/${item.id}`}
+                  href={`/reef/search/${item.id}`}
                   className={`relative block w-full text-left px-3 py-2 rounded-md transition-all group ${
                     isActive
                       ? "bg-cyan-500/15 border border-cyan-500/30"

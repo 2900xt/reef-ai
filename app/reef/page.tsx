@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import PreSearchView from "@/components/PreSearchView";
+import PreSearchView from "@/components/reef/PreSearchView";
 import ScrollingAbstractsBackground from "@/components/ScrollingAbstractsBackground";
 
 export default function Home() {
@@ -94,7 +94,7 @@ export default function Home() {
 
       // Redirect to the search results page
       if (data.searchId) {
-        router.push(`/search/${data.searchId}`);
+        router.push(`/reef/search/${data.searchId}`);
       }
     } catch (err) {
       setError("An error occurred while searching. Please try again.");
