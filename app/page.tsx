@@ -7,6 +7,14 @@ export default function Home() {
     <div className="relative flex flex-col h-screen bg-slate-950 overflow-hidden">
       <ScrollingAbstractsBackground />
 
+      {/* API Docs link */}
+      <Link
+        href="/docs"
+        className="absolute top-4 right-4 z-20 px-4 py-2 text-sm text-white/70 hover:text-white transition-colors"
+      >
+        API Docs
+      </Link>
+
       {/* Hero content */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 text-center">
         <h1 className="text-5xl sm:text-6xl font-bold text-white tracking-tight">
