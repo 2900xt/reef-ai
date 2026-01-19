@@ -47,7 +47,9 @@ export default function SearchResultsPage() {
 
   useEffect(() => {
     if (!authLoading && user && searchId) {
-      fetchSearchResults();
+      const abortController = new AbortController();
+      fetchSearchResults(abortController.signal);
+      return () => abortController.abort();
     }
   }, [user, authLoading, searchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -79,7 +81,13 @@ export default function SearchResultsPage() {
     };
   }, [isDragging]);
 
-  const fetchSearchResults = async () => {
+  const fetchSearchResults = async (signal?: AbortSignal) => {
+    if (!user?.id) {
+      setError("User not authenticated");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -90,8 +98,9 @@ export default function SearchResultsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.id,
+          userId: user.id,
         }),
+        signal,
       });
 
       if (!response.ok) {
@@ -103,6 +112,10 @@ export default function SearchResultsPage() {
       setSearchRecord(data.search);
       setResults(data.papers || []);
     } catch (err) {
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       setError(err instanceof Error ? err.message : "An error occurred");
       console.error("Search results error:", err);
     } finally {
@@ -188,9 +201,9 @@ export default function SearchResultsPage() {
                 <span className="ml-2 text-white/60">Loading results...</span>
               </div>
             ) : results.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="w-10 h-10 text-white/20 mx-auto mb-3" />
-                <p className="text-white/50 text-sm">No papers found.</p>
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
+                <span className="ml-2 text-white/60">Loading results...</span>
               </div>
             ) : (
               <div>
