@@ -13,6 +13,8 @@ const docSections: DocSection[] = [
   { id: "lifecycle", title: "Search Life Cycle", tool: "General" },
   { id: "papers-new", title: "Create Search", tool: "Reef" },
   { id: "search-id", title: "Get Results", tool: "Reef" },
+  { id: "extract-claims", title: "Extract Claims", tool: "Pearl" },
+  { id: "gen-angles", title: "Generate Angles", tool: "Pearl" },
   { id: "error-codes", title: "Error Codes", tool: "General" },
 ];
 
@@ -41,7 +43,7 @@ export default function DocsPage() {
   const handleSectionClick = (id: string) => {
     setActiveSection(id);
     // If it's an endpoint, expand it
-    if (["papers-new", "search-id"].includes(id)) {
+    if (["papers-new", "search-id", "extract-claims", "gen-angles"].includes(id)) {
       setExpandedSection(id);
     }
     // Scroll to section
@@ -110,12 +112,12 @@ export default function DocsPage() {
             </p>
           </div>
 
-          {/* POST /api/papers/new */}
+          {/* POST /api/reef/papers/new */}
           <div ref={(el) => { sectionRefs.current["papers-new"] = el; }}>
             <ApiEndpoint
               id="papers-new"
               method="POST"
-              path="/api/papers/new"
+              path="/api/reef/papers/new"
               description="Create a new search from an abstract. Costs 1 credit."
               requestBody={[
                 { name: "userId", type: "string", description: "Your API key" },
@@ -125,7 +127,7 @@ export default function DocsPage() {
                 { name: "searchId", type: "uuid", nested: undefined },
                 { name: "message", type: "Search saved successfully", nested: undefined },
               ]}
-              example={`curl -X POST ${baseUrl}/api/papers/new \\
+              example={`curl -X POST ${baseUrl}/api/reef/papers/new \\
   -H "Content-Type: application/json" \\
   -d '{"userId": "YOUR_API_KEY", "abstract": "..."}'`}
               expandedSection={expandedSection}
@@ -135,17 +137,17 @@ export default function DocsPage() {
             />
           </div>
 
-          {/* POST /api/search/[id] */}
+          {/* POST /api/reef/search/[id] */}
           <div ref={(el) => { sectionRefs.current["search-id"] = el; }}>
             <ApiEndpoint
               id="search-id"
               method="POST"
-              path="/api/search/[id]"
+              path="/api/reef/search/[id]"
               description="Retrieve search results for a given search ID."
               urlParams={[
                 {
                   name: "id",
-                  description: "The search ID returned from /api/papers/new",
+                  description: "The search ID returned from /api/reef/papers/new",
                 },
               ]}
               requestBody={[{ name: "userId", type: "string", description: "Your API key" }]}
@@ -157,9 +159,83 @@ export default function DocsPage() {
                   nested: "id, title, abstract, authors, publish_date, doi, similarity",
                 },
               ]}
-              example={`curl -X POST ${baseUrl}/api/search/SEARCH_ID \\
+              example={`curl -X POST ${baseUrl}/api/reef/search/SEARCH_ID \\
   -H "Content-Type: application/json" \\
   -d '{"userId": "${user?.id || "YOUR_API_KEY"}"}'`}
+              expandedSection={expandedSection}
+              onToggle={handleToggle}
+              copiedEndpoint={copiedEndpoint}
+              onCopy={copyToClipboard}
+            />
+          </div>
+
+          {/* Pearl API Section Header */}
+          <div className="mt-6 mb-3">
+            <h2 className="text-sm font-semibold text-white/80 uppercase tracking-wider">
+              Pearl API
+            </h2>
+            <p className="text-xs text-white/40 mt-1">
+              AI-powered research angle discovery from academic papers
+            </p>
+          </div>
+
+          {/* POST /api/pearl/extract-claims */}
+          <div ref={(el) => { sectionRefs.current["extract-claims"] = el; }}>
+            <ApiEndpoint
+              id="extract-claims"
+              method="POST"
+              path="/api/pearl/extract-claims"
+              description="Extract scientific claims, methods, limitations, and conclusions from ArXiv papers using AI analysis."
+              requestBody={[
+                { name: "userId", type: "string", description: "Your API key" },
+                { name: "arxiv_ids", type: "string[]", description: "Array of ArXiv paper IDs to analyze" },
+              ]}
+              response={[
+                {
+                  name: "papers",
+                  type: "",
+                  nested: "arxiv_id, claims[], methods[], limitations[], conclusion",
+                },
+                {
+                  name: "errors",
+                  type: "",
+                  nested: "arxiv_id, error (optional, for failed extractions)",
+                },
+              ]}
+              example={`curl -X POST ${baseUrl}/api/pearl/extract-claims \\
+  -H "Content-Type: application/json" \\
+  -d '{"userId": "${user?.id || "YOUR_API_KEY"}", "arxiv_ids": ["2401.12345", "2401.67890"]}'`}
+              expandedSection={expandedSection}
+              onToggle={handleToggle}
+              copiedEndpoint={copiedEndpoint}
+              onCopy={copyToClipboard}
+            />
+          </div>
+
+          {/* POST /api/pearl/gen-angles */}
+          <div ref={(el) => { sectionRefs.current["gen-angles"] = el; }}>
+            <ApiEndpoint
+              id="gen-angles"
+              method="POST"
+              path="/api/pearl/gen-angles"
+              description="Generate novel research angles based on analyzed papers and your research idea. Returns top 3 angles ranked by novelty, practicality, and impact."
+              requestBody={[
+                { name: "userId", type: "string", description: "Your API key" },
+                { name: "researchIdea", type: "string", description: "Your original research idea/abstract" },
+                { name: "papers", type: "PaperAnalysis[]", description: "Array of analyzed papers from extract-claims" },
+              ]}
+              response={[
+                {
+                  name: "angles",
+                  type: "",
+                  nested: "title, description, novelty, practicality, impact, overallScore, reasoning, briefPlan[], relatedLimitations[]",
+                },
+                { name: "analyzedPapers", type: "number", nested: undefined },
+                { name: "userIdea", type: "string", nested: undefined },
+              ]}
+              example={`curl -X POST ${baseUrl}/api/pearl/gen-angles \\
+  -H "Content-Type: application/json" \\
+  -d '{"userId": "${user?.id || "YOUR_API_KEY"}", "researchIdea": "...", "papers": [...]}'`}
               expandedSection={expandedSection}
               onToggle={handleToggle}
               copiedEndpoint={copiedEndpoint}
