@@ -7,6 +7,7 @@ import Image from "next/image";
 import ScrollingAbstractsBackground from "@/components/ScrollingAbstractsBackground";
 import ToolSelector from "@/components/ToolSelector";
 import SearchBar from "@/components/reef/SearchBar";
+import ReefResultsView from "@/components/reef/ReefResultsView";
 import {
   ResearchInput,
   ProcessingProgress,
@@ -40,6 +41,24 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
   const [isParsingFile, setIsParsingFile] = useState(false);
+  const [reefSearchData, setReefSearchData] = useState<{
+    search: {
+      title: string;
+      abstract: string;
+      created_at: string;
+    };
+    papers: Array<{
+      id?: string;
+      arxiv_id?: string;
+      title: string;
+      abstract: string;
+      authors: string;
+      publish_date: string;
+      doi: string | null;
+      journal_ref: string | null;
+      similarity: number;
+    }>;
+  } | null>(null);
 
   // Pearl state
   const [researchIdea, setResearchIdea] = useState("");
@@ -99,6 +118,7 @@ export default function Home() {
 
     setIsSearching(true);
     setReefError(null);
+    setReefSearchData(null);
 
     try {
       let queryText = extractedText;
@@ -128,15 +148,24 @@ export default function Home() {
         return;
       }
 
-      if (data.searchId) {
-        window.location.href = `/reef/search/${data.searchId}`;
-      }
+      setReefSearchData({
+        search: data.search,
+        papers: data.papers || [],
+      });
     } catch (err) {
       setReefError("An error occurred while searching. Please try again.");
       console.error("Search error:", err);
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const resetReefSearch = () => {
+    setReefSearchData(null);
+    setSearchQuery("");
+    setSelectedFile(null);
+    setExtractedText("");
+    setReefError(null);
   };
 
   // Pearl handlers
@@ -169,20 +198,7 @@ export default function Home() {
         throw new Error(data.error || "Failed to create search");
       }
 
-      const { searchId } = await searchResponse.json();
-
-      const resultsResponse = await fetch(`/api/reef/search/${searchId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user!.id }),
-      });
-
-      if (!resultsResponse.ok) {
-        const data = await resultsResponse.json();
-        throw new Error(data.error || "Failed to fetch search results");
-      }
-
-      const searchData = await resultsResponse.json();
+      const searchData = await searchResponse.json();
       const arxivIds = searchData.papers.slice(0, 5).map((p: { arxiv_id: string }) => p.arxiv_id);
 
       if (arxivIds.length === 0) {
@@ -238,7 +254,6 @@ export default function Home() {
       setResults({
         angles: anglesData.angles,
         analyzedPapers: anglesData.analyzedPapers,
-        searchId,
       });
       setCurrentStep("complete");
     } catch (err) {
@@ -279,6 +294,27 @@ export default function Home() {
 
   const isProcessing = ["searching", "extracting", "generating"].includes(currentStep);
 
+  // Reef Results - Full screen split view
+  if (activeTool === "reef" && reefSearchData) {
+    return (
+      <div className="relative flex flex-col h-[calc(100vh-2.75rem)] mt-11 bg-slate-950 overflow-hidden">
+        {/* Background effects */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[150px]" />
+          <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[150px]" />
+        </div>
+
+        <div className="relative z-10 flex-1 flex overflow-hidden">
+          <ReefResultsView
+            search={reefSearchData.search}
+            papers={reefSearchData.papers}
+            onNewSearch={resetReefSearch}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex flex-col h-[calc(100vh-2.75rem)] bg-slate-950 overflow-hidden">
       <ScrollingAbstractsBackground />
@@ -306,7 +342,7 @@ export default function Home() {
             />
           </div>
 
-          {/* Reef Content */}
+          {/* Reef Content - Search Input */}
           {activeTool === "reef" && (
             <div className="w-full max-w-2xl opacity-0 animate-fade-in-up animation-delay-200">
               <h1 className="text-xl font-semibold text-white mb-4 text-center">

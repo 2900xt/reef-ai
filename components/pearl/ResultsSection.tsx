@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Sparkles, Lightbulb, Rocket, Zap, ChevronRight, ExternalLink, Copy, FileText, RefreshCw, Check, Loader2 } from "lucide-react";
+import { Sparkles, Lightbulb, Rocket, Zap, ChevronRight, Copy, FileText, RefreshCw, Check, Loader2 } from "lucide-react";
 import { ResultsState, ResearchAngle } from "./types";
 
 interface ResultsSectionProps {
@@ -334,13 +333,9 @@ ${selectedAngle.relatedLimitations.map(lim => `- ${lim}`).join('\n')}`;
           </div>
           <div>
             <h2 className="text-base font-semibold text-white">Research Angles</h2>
-            <Link
-              href={`/reef/search/${results.searchId}`}
-              className="text-xs text-white/40 hover:text-amber-400 transition-colors flex items-center gap-1"
-            >
+            <span className="text-xs text-white/40">
               {results.angles.length} angles from {results.analyzedPapers} papers
-              <ExternalLink className="w-3 h-3" />
-            </Link>
+            </span>
           </div>
         </div>
         <button

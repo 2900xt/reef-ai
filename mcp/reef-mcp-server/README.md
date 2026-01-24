@@ -5,25 +5,11 @@ A Model Context Protocol (MCP) server for the Reef AI research paper search API.
 ## Tools
 
 ### `reef_search`
-Create a search and immediately retrieve results in one call. This is the recommended tool for most use cases.
+Search for similar research papers using an abstract or description. Returns matching papers ranked by similarity.
 
 **Parameters:**
 - `abstract` (required): The research paper abstract or description to search
 - `userId` (optional): Your Reef API user ID (uses env var if not provided)
-
-### `reef_search_new`
-Create a new research paper search. Returns a search ID for later retrieval.
-
-**Parameters:**
-- `abstract` (required): The research paper abstract or description
-- `userId` (optional): Your Reef API user ID
-
-### `reef_get_results`
-Retrieve results for an existing search.
-
-**Parameters:**
-- `searchId` (required): The search ID from `reef_search_new`
-- `userId` (optional): Your Reef API user ID
 
 ## Setup
 

@@ -7,6 +7,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const paperSupabase = createClient(
+  process.env.PAPER_SUPABASE_URL!,
+  process.env.PAPER_SUPABASE_SERVICE_ROLE_KEY!
+);
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: NextRequest) {
@@ -48,6 +54,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Make sure that the user exists and fetch their profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('credits_remaining, whitelisted')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Profile fetch error:', profileError);
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user is whitelisted
+    if (!profile.whitelisted) {
+      return NextResponse.json(
+        { error: 'Forbidden: User is not whitelisted' },
+        { status: 403 }
+      );
+    }
+
+    if (profile.credits_remaining <= 0) {
+      return NextResponse.json(
+        { error: 'Insufficient credits' },
+        { status: 402 }
+      );
+    }
+
     // Generate embedding for the abstract
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
@@ -72,38 +108,9 @@ export async function POST(request: NextRequest) {
     });
 
     const embedding = embeddingResponse.data[0].embedding;
+    const title = titleResponse.choices[0].message?.content?.trim() || 'Untitled';
 
-    // Make sure that the user exists and fetch their profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('credits_remaining, whitelisted')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || !profile) {
-      console.error('Profile fetch error:', profileError);
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if user is whitelisted
-    if (!profile.whitelisted) {
-      return NextResponse.json(
-        { error: 'Forbidden: User is not whitelisted' },
-        { status: 403 }
-      );
-    }
-    
-    // Free for public use - no credit deduction
-    if (profile.credits_remaining <= 0) {
-      return NextResponse.json(
-        { error: 'Insufficient credits' },
-        { status: 402 }
-      );
-    }
-
+    // Deduct credit
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ credits_remaining: profile.credits_remaining - 1 })
@@ -117,29 +124,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert into reef_searches table
-    const { data: searchRecord, error: insertError } = await supabase
-      .from('reef_searches')
-      .insert({
-        user_id: userId,
-        embedding: embedding,
-        title: titleResponse.choices[0].message?.content?.trim() || 'Untitled',
-        abstract: abstract,
-      })
-      .select()
-      .single();
+    // Fetch similar papers using the embedding
+    const { data: papers, error: papersError } = await paperSupabase.rpc('match_papers', {
+      query_embedding: embedding,
+      match_threshold: 0.0,
+      match_count: 10,
+    });
 
-    if (insertError) {
-      console.error('Supabase insert error:', insertError);
+    if (papersError) {
+      console.error('Papers fetch error:', papersError);
       return NextResponse.json(
-        { error: 'Failed to save search' },
+        { error: 'Failed to fetch similar papers' },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      searchId: searchRecord.id,
-      message: 'Search saved successfully'
+      search: {
+        title,
+        abstract,
+        created_at: new Date().toISOString(),
+      },
+      papers: papers || [],
     });
   } catch (error) {
     console.error('API error:', error);

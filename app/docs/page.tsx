@@ -10,9 +10,8 @@ import ErrorCodes from "@/components/docs/ErrorCodes";
 // Define all documentation sections for the sidebar
 const docSections: DocSection[] = [
   { id: "authentication", title: "Authentication", tool: "General" },
-  { id: "lifecycle", title: "Search Life Cycle", tool: "General" },
-  { id: "papers-new", title: "Create Search", tool: "Reef" },
-  { id: "search-id", title: "Get Results", tool: "Reef" },
+  { id: "lifecycle", title: "Data Privacy", tool: "General" },
+  { id: "papers-new", title: "Search Papers", tool: "Reef" },
   { id: "extract-claims", title: "Extract Claims", tool: "Pearl" },
   { id: "gen-angles", title: "Generate Angles", tool: "Pearl" },
   { id: "gen-abstract", title: "Generate Abstract", tool: "Pearl" },
@@ -44,7 +43,7 @@ export default function DocsPage() {
   const handleSectionClick = (id: string) => {
     setActiveSection(id);
     // If it's an endpoint, expand it
-    if (["papers-new", "search-id", "extract-claims", "gen-angles", "gen-abstract"].includes(id)) {
+    if (["papers-new", "extract-claims", "gen-angles", "gen-abstract"].includes(id)) {
       setExpandedSection(id);
     }
     // Scroll to section
@@ -89,12 +88,11 @@ export default function DocsPage() {
             </InfoCard>
           </div>
 
-          {/* Life Cycle */}
+          {/* Data Privacy */}
           <div ref={(el) => { sectionRefs.current["lifecycle"] = el; }}>
-            <InfoCard title="Search Life Cycle">
-              All requests and stored searches have a life cycle of 3 days. After this period,
-              searches and their associated data will be automatically deleted from our servers to
-              ensure data privacy and optimal performance.
+            <InfoCard title="Data Privacy">
+              Search queries are not stored on our servers. Results are returned directly and
+              no search history is maintained. Each API call is stateless for your privacy.
             </InfoCard>
           </div>
 
@@ -119,50 +117,22 @@ export default function DocsPage() {
               id="papers-new"
               method="POST"
               path="/api/reef/papers/new"
-              description="Create a new search from an abstract. Costs 1 credit."
+              description="Search for similar papers from an abstract. Returns results directly. Costs 1 credit."
               requestBody={[
                 { name: "userId", type: "string", description: "Your API key" },
                 { name: "abstract", type: "string", description: "Paper abstract to search" },
               ]}
               response={[
-                { name: "searchId", type: "uuid", nested: undefined },
-                { name: "message", type: "Search saved successfully", nested: undefined },
-              ]}
-              example={`curl -X POST ${baseUrl}/api/reef/papers/new \\
-  -H "Content-Type: application/json" \\
-  -d '{"userId": "YOUR_API_KEY", "abstract": "..."}'`}
-              expandedSection={expandedSection}
-              onToggle={handleToggle}
-              copiedEndpoint={copiedEndpoint}
-              onCopy={copyToClipboard}
-            />
-          </div>
-
-          {/* POST /api/reef/search/[id] */}
-          <div ref={(el) => { sectionRefs.current["search-id"] = el; }}>
-            <ApiEndpoint
-              id="search-id"
-              method="POST"
-              path="/api/reef/search/[id]"
-              description="Retrieve search results for a given search ID."
-              urlParams={[
-                {
-                  name: "id",
-                  description: "The search ID returned from /api/reef/papers/new",
-                },
-              ]}
-              requestBody={[{ name: "userId", type: "string", description: "Your API key" }]}
-              response={[
-                { name: "search", type: "", nested: "id, title, abstract, created_at" },
+                { name: "search", type: "", nested: "title, abstract, created_at" },
                 {
                   name: "papers",
                   type: "",
                   nested: "id, title, abstract, authors, publish_date, doi, similarity",
                 },
               ]}
-              example={`curl -X POST ${baseUrl}/api/reef/search/SEARCH_ID \\
+              example={`curl -X POST ${baseUrl}/api/reef/papers/new \\
   -H "Content-Type: application/json" \\
-  -d '{"userId": "${user?.id || "YOUR_API_KEY"}"}'`}
+  -d '{"userId": "${user?.id || "YOUR_API_KEY"}", "abstract": "Your paper abstract or search query..."}'`}
               expandedSection={expandedSection}
               onToggle={handleToggle}
               copiedEndpoint={copiedEndpoint}
