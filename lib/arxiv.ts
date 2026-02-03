@@ -12,7 +12,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
 
-const parser = new Parser();
+const parser = new Parser({
+  customFields: {
+    item: [['arxiv:announce_type', 'announceType']],
+  },
+});
 
 export interface ArxivRSSEntry {
   title: string;
@@ -128,9 +132,12 @@ export async function uploadPapersFromRSS(categories: string[] = ['cs.AI', 'cs.L
     allPapers = [...allPapers, ...papers];
   }
 
-  // Deduplicate by link/id
+  // Deduplicate by link/id and filter for 'new' announcements
   const uniquePapers = new Map<string, ArxivRSSEntry>();
   for (const p of allPapers) {
+    // Only process new papers
+    if (p.announceType !== 'new') continue;
+
     const id = extractArxivId(p.link);
     if (id) uniquePapers.set(id, p);
   }

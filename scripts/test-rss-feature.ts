@@ -15,6 +15,7 @@ async function test() {
       console.log('First paper snippet:', {
         title: firstPaper.title,
         link: firstPaper.link,
+        announceType: firstPaper.announceType,
       });
 
       console.log('\nTesting Parsing...');
