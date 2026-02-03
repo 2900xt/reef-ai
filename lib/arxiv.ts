@@ -97,12 +97,20 @@ export async function parseRSSEntry(entry: ArxivRSSEntry): Promise<DatabaseRow |
   // Arxiv RSS 'description' usually contains the abstract but with 'Abstract: ' prefix sometimes
   let abstract = entry.contentSnippet || entry.content || '';
 
-  // Clean up abstract if needed (Arxiv RSS abstracts often start with <p> or contain HTML)
-  // For now simple replacement of newlines
+  // Clean up abstract
+  // The RSS feed description often contains "arXiv:ID Announce Type: type Abstract: The abstract text..."
+  // or sometimes just "Abstract: The abstract text..."
   abstract = abstract.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').trim();
-  if (abstract.startsWith('Abstract:')) {
-    abstract = abstract.substring(9).trim();
-  }
+
+  // Regex to remove the header info.
+  // Matches "arXiv:..." followed by anything until "Abstract:" (case insensitive)
+  abstract = abstract.replace(/^arXiv:[^\s]+\s+Announce Type:.*?\s+Abstract:\s*/i, '');
+
+  // Also clean up just "Abstract:" prefix if the above didn't match or if it appears alone
+  abstract = abstract.replace(/^Abstract:\s*/i, '');
+
+  // Double check trim
+  abstract = abstract.trim();
 
   // Authors are often in 'creator' field in RSS
   const authors = entry.creator || entry.author || null;
